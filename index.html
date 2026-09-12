@@ -1,0 +1,1210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>For You, Kiddo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,600;1,500&family=Caveat:wght@500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  /* ============================================================
+     HOW TO ADD / EDIT PHOTOS & VIDEOS IN THIS CODE:
+     
+     1. PHOTOS:
+        - Search for 'assests/' in this file.
+        - You can change the image src attribute directly:
+          <img src="assests/YourImage.jpeg" alt="Description">
+        - You can change the handwritten caption text inside:
+          <div class="photo-caption">your caption here</div>
+        - To add more photos to the Gallery, simply copy-paste a
+          '<div class="photo-frame">...</div>' block in the Gallery section!
+     
+     2. VIDEOS:
+        - Search for '<video' in this file.
+        - Update the source tag:
+          <source src="assests/YourVideo.mp4" type="video/mp4">
+        - Update the caption title and description below each video.
+        
+     3. TEXT & MESSAGES:
+        - Edit message cards inside 'cardsWrap'
+        - Edit envelopes inside 'envData' JSON script tag
+        - Edit poem lines inside 'poemData' JSON script tag
+     ============================================================ */
+
+  :root{
+    --ink:#2b1710;
+    --paper:#f6ecda;
+    --paper-dark:#ecdfc4;
+    --espresso:#2a160f;
+    --espresso-2:#3a2015;
+    --gold:#c9a868;
+    --rose:#b8695a;
+    --moss:#5b6b4f;
+    --shadow: 0 18px 40px rgba(20,10,5,.35);
+    --serif: 'Fraunces', Georgia, serif;
+    --hand: 'Caveat', cursive;
+    --sans: 'Inter', -apple-system, sans-serif;
+  }
+
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;
+    background:var(--espresso);
+    color:var(--paper);
+    font-family:var(--sans);
+    overflow-x:hidden;
+    -webkit-tap-highlight-color:transparent;
+  }
+  ::selection{background:var(--gold);color:var(--espresso);}
+
+  @media (prefers-reduced-motion: reduce){
+    *{animation-duration:0.001ms !important; animation-iteration-count:1 !important; transition-duration:0.001ms !important; scroll-behavior:auto !important;}
+  }
+
+  section{
+    position:relative;
+    min-height:100svh;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    padding:8vh 6vw;
+    text-align:center;
+    overflow:hidden;
+  }
+
+  /* Ensures real content always paints above particle canvas */
+  section > *{ position:relative; z-index:1; }
+
+  .veil{
+    opacity:0; transform: translateY(24px);
+    transition: opacity 0.9s cubic-bezier(0.25, 1, 0.5, 1), transform 0.9s cubic-bezier(0.25, 1, 0.5, 1);
+    will-change: opacity, transform;
+  }
+  .veil.in{ opacity:1; transform:none; }
+
+  h1,h2,h3{ font-family:var(--serif); font-weight:600; margin:0; line-height:1.15; }
+  p{ font-family:var(--sans); line-height:1.6; margin:.6em 0; max-width:520px; }
+  .line{ font-family:var(--serif); font-style:italic; font-weight:400; font-size:clamp(20px,5vw,30px); margin:.5em 0; max-width:560px; }
+  .hand{ font-family:var(--hand); font-size:clamp(26px,7vw,38px); color:var(--gold); line-height:1.25; }
+  .small{ font-size:14px; opacity:.75; letter-spacing:.02em; }
+
+  button.btn{
+    font-family:var(--sans);
+    font-weight:600;
+    font-size:16px;
+    background:var(--gold);
+    color:var(--espresso);
+    border:none;
+    padding:14px 30px;
+    border-radius:999px;
+    cursor:pointer;
+    margin-top:28px;
+    box-shadow:var(--shadow);
+    transition:transform .25s ease, box-shadow .25s ease, background .25s ease;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    text-decoration:none;
+  }
+  button.btn:hover{
+    transform:translateY(-2px);
+    box-shadow:0 20px 45px rgba(20,10,5,.45);
+  }
+  button.btn:active{ transform:scale(.96); }
+  button.btn.ghost{
+    background:transparent;
+    color:var(--paper);
+    border:1.5px solid var(--gold);
+  }
+  button.btn.ghost:hover{
+    background:rgba(201,168,104,0.12);
+  }
+
+  /* ---------- Opening ---------- */
+  #opening{ background:radial-gradient(ellipse at 50% 30%, #3a2015, #180c08 75%); }
+  #opening .msg{ font-family:var(--serif); font-style:italic; font-size:clamp(24px,6.5vw,40px); min-height:2.4em; }
+  .cursor{ display:inline-block; width:2px; background:var(--gold); margin-left:4px; animation:blink 1s step-end infinite; }
+  @keyframes blink{ 50%{ opacity:0; } }
+
+  /* ---------- Paper texture panels ---------- */
+  .paper-panel{
+    background:
+      repeating-linear-gradient(0deg, rgba(0,0,0,.015) 0 1px, transparent 1px 26px),
+      var(--paper);
+    color:var(--ink);
+    border-radius:6px;
+    box-shadow:var(--shadow);
+  }
+
+  /* ---------- Polaroid Photos & Tape ---------- */
+  .photo-frame{
+    position:relative;
+    display:inline-flex;
+    flex-direction:column;
+    align-items:center;
+    filter:drop-shadow(0 14px 28px rgba(20,10,5,.35));
+    transform:rotate(var(--r,-2deg));
+    transition:transform .35s cubic-bezier(0.2, 0.8, 0.2, 1), filter .35s ease;
+    cursor:pointer;
+    user-select:none;
+  }
+  .photo-frame:hover{
+    transform:rotate(0deg) scale(1.03);
+    filter:drop-shadow(0 20px 38px rgba(20,10,5,.45));
+    z-index:10;
+  }
+  .tape{
+    position:absolute;
+    top:-12px;
+    left:50%;
+    transform:translateX(-50%) rotate(-2.5deg);
+    width:72px;
+    height:25px;
+    background:rgba(246,236,218,0.72);
+    box-shadow:0 3px 6px rgba(0,0,0,.15);
+    backdrop-filter:blur(1px);
+    z-index:5;
+    pointer-events:none;
+  }
+  .photo-slot{
+    width:min(78vw, 300px);
+    background:var(--paper);
+    padding:10px 10px 18px 10px;
+    border-radius:3px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    box-sizing:border-box;
+  }
+  .photo-slot.small{
+    width:min(40vw, 150px);
+    padding:8px 8px 14px 8px;
+  }
+  .photo-img-wrap{
+    width:100%;
+    aspect-ratio:4/5;
+    background:#1f130e;
+    border-radius:2px;
+    overflow:hidden;
+    position:relative;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  .photo-img-wrap img{
+    width:100%;
+    height:100%;
+    object-fit:cover;
+    display:block;
+    transition:transform .5s ease;
+  }
+  .photo-frame:hover .photo-img-wrap img{
+    transform:scale(1.04);
+  }
+  .photo-caption{
+    font-family:var(--hand);
+    color:var(--ink);
+    font-size:18px;
+    margin-top:8px;
+    line-height:1.2;
+    text-align:center;
+    max-width:92%;
+  }
+  .photo-slot.small .photo-caption{
+    font-size:14px;
+    margin-top:6px;
+  }
+  .photo-fallback{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    color:rgba(246,236,218,0.7);
+    font-family:var(--sans);
+    font-size:12px;
+    text-align:center;
+    padding:10px;
+  }
+  .photo-fallback span{ font-size:24px; margin-bottom:4px; }
+
+  .chapter-num{
+    font-family:var(--hand); color:var(--rose); font-size:22px; margin-bottom:.2em;
+  }
+
+  /* ---------- Fun section cards ---------- */
+  .chaos-grid{
+    display:grid; grid-template-columns:1fr; gap:16px; width:100%; max-width:420px;
+  }
+  .chaos-card{
+    background:var(--paper-dark); color:var(--ink); border-radius:14px;
+    padding:18px 20px; text-align:left; box-shadow:var(--shadow);
+    transform:rotate(var(--r,0deg));
+    font-family:var(--serif); font-size:17px;
+  }
+
+  /* ---------- 12 message cards ---------- */
+  .cards-wrap{
+    display:grid; grid-template-columns:repeat(2,1fr); gap:14px; width:100%; max-width:460px;
+  }
+  .mcard{
+    aspect-ratio:1/1.1;
+    background:var(--paper);
+    color:var(--ink);
+    border-radius:12px;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    padding:12px; cursor:pointer; box-shadow:var(--shadow);
+    transition:transform .3s ease, box-shadow .3s ease;
+    text-align:center;
+  }
+  .mcard:hover{
+    transform:translateY(-3px);
+    box-shadow:0 22px 45px rgba(20,10,5,.4);
+  }
+  .mcard:active{ transform:scale(.97); }
+  .mcard .emoji{ font-size:30px; }
+  .mcard .title{ font-family:var(--serif); font-weight:600; font-size:14px; margin-top:6px; }
+  .mcard .back{ display:none; font-family:var(--hand); font-size:18px; padding:4px; line-height:1.3; }
+  .mcard.open .front{ display:none; }
+  .mcard.open .back{ display:block; }
+
+  /* ---------- Envelopes ---------- */
+  .env-list{ display:flex; flex-direction:column; gap:16px; width:100%; max-width:420px; }
+  .envelope{
+    background:linear-gradient(180deg,#e9dcbd,#dccb9f);
+    color:var(--ink); border-radius:10px; padding:18px 20px;
+    text-align:left; cursor:pointer; box-shadow:var(--shadow);
+    position:relative;
+    transition:transform .2s ease;
+  }
+  .envelope:hover{ transform:translateY(-2px); }
+  .envelope .flap{ font-family:var(--serif); font-weight:600; font-size:16px; }
+  .envelope .inside{
+    max-height:0; overflow:hidden; transition:max-height .5s ease, margin-top .5s ease;
+    font-family:var(--hand); font-size:20px; margin-top:0; line-height:1.4;
+  }
+  .envelope.open .inside{ max-height:400px; margin-top:10px; }
+  .envelope::after{
+    content:"open ↓"; font-size:12px; opacity:.55; float:right;
+  }
+  .envelope.open::after{ content:"close ↑"; }
+
+  /* ---------- Timeline ---------- */
+  .timeline{ display:flex; flex-direction:column; gap:0; width:100%; max-width:360px; text-align:left; }
+  .t-item{ position:relative; padding:0 0 34px 30px; }
+  .t-item::before{
+    content:""; position:absolute; left:6px; top:6px; width:10px; height:10px;
+    border-radius:50%; background:var(--gold);
+  }
+  .t-item::after{
+    content:""; position:absolute; left:10px; top:16px; bottom:-4px; width:2px; background:rgba(201,168,104,.4);
+  }
+  .t-item:last-child::after{ display:none; }
+  .t-item h3{ font-size:17px; color:var(--gold); }
+  .t-item p{ margin:.2em 0 0; font-size:14px; opacity:.85; }
+
+  /* ---------- Letter ---------- */
+  .letter-paper{
+    max-width:520px; text-align:left; padding:34px 26px;
+    font-family:var(--hand); font-size:22px; line-height:1.5;
+  }
+  .letter-paper .sign{ text-align:right; margin-top:20px; font-size:26px; }
+
+  /* ---------- Poem ---------- */
+  .poem-line{
+    font-family:var(--hand); font-size:clamp(20px,6vw,28px); color:var(--paper);
+    opacity:0; transform:translateY(14px); transition:opacity .8s ease, transform .8s ease;
+    margin:.35em 0;
+  }
+  .poem-line.in{ opacity:1; transform:none; }
+
+  /* ---------- Gallery ---------- */
+  .gallery{
+    display:grid; grid-template-columns:repeat(2,1fr); gap:16px; width:100%; max-width:460px;
+  }
+
+  /* ---------- Video memories ---------- */
+  .video-memory{
+    width:min(92vw, 720px);
+    margin-top:22px;
+    text-align:left;
+  }
+  .video-frame{
+    position:relative;
+    width:100%;
+    background:#120b08;
+    border:7px solid var(--paper);
+    border-radius:10px;
+    box-shadow:var(--shadow);
+    overflow:hidden;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+  }
+  .video-frame video{
+    width:100%;
+    max-height:75vh;
+    display:block;
+    background:#120b08;
+    object-fit:contain;
+    outline:none;
+  }
+  .video-caption{ margin-top:16px; text-align:center; }
+  .video-caption h3{ color:var(--gold); font-size:clamp(21px,5vw,28px); }
+  .video-caption p{ margin-left:auto; margin-right:auto; opacity:.86; }
+
+  /* ---------- Photo Lightbox Modal ---------- */
+  .lightbox-modal{
+    position:fixed; inset:0; z-index:9999;
+    background:rgba(18,12,8,0.92);
+    backdrop-filter:blur(8px);
+    display:none; align-items:center; justify-content:center;
+    padding:20px; opacity:0;
+    transition:opacity .3s ease;
+  }
+  .lightbox-modal.active{ display:flex; opacity:1; }
+  .lightbox-content{
+    position:relative;
+    max-width:min(92vw, 680px);
+    max-height:90vh;
+    display:flex; flex-direction:column; align-items:center;
+  }
+  .lightbox-content img{
+    max-width:100%;
+    max-height:75vh;
+    border:7px solid var(--paper);
+    border-radius:4px;
+    box-shadow:0 25px 60px rgba(0,0,0,.6);
+    object-fit:contain;
+    background:#1a100a;
+  }
+  .lightbox-caption{
+    font-family:var(--hand);
+    color:var(--paper);
+    font-size:24px;
+    margin-top:14px;
+    text-align:center;
+  }
+  .lightbox-close{
+    position:absolute; top:-40px; right:0;
+    background:none; border:none; color:var(--paper);
+    font-size:32px; cursor:pointer; font-family:var(--sans);
+    padding:4px 10px; line-height:1;
+    transition:transform .2s ease;
+  }
+  .lightbox-close:hover{ transform:scale(1.2); }
+
+  /* ---------- Final ---------- */
+  #final{ background:var(--paper); color:var(--ink); }
+  #final .big{ font-size:clamp(34px,9vw,56px); }
+
+  .easter-star{
+    position:fixed; bottom:18px; right:18px; font-size:20px; opacity:.35; cursor:pointer; z-index:50;
+    transition:opacity .3s ease;
+  }
+  .easter-star:hover{ opacity:.8; }
+
+  .secret-toast{
+    position:fixed; left:50%; bottom:60px; transform:translate(-50%,20px);
+    background:var(--gold); color:var(--espresso); padding:10px 18px; border-radius:999px;
+    font-family:var(--hand); font-size:18px; opacity:0; pointer-events:none;
+    transition:opacity .4s ease, transform .4s ease; z-index:60;
+  }
+  .secret-toast.show{ opacity:1; transform:translate(-50%,0); }
+
+  .divider{ width:60px; height:2px; background:var(--gold); opacity:.6; margin:18px auto; }
+
+  /* Canvas inserted by Three.js for the particle sections */
+  .particle-canvas{ position:absolute; inset:0; z-index:0; pointer-events:none; display:block; }
+
+  footer.credit{ text-align:center; padding:20px; font-size:12px; opacity:.5; position:relative; z-index:1; }
+</style>
+</head>
+<body>
+
+<!-- Photo Lightbox Modal (click any photo to view full size) -->
+<div id="photoLightbox" class="lightbox-modal" onclick="closeLightbox(event)">
+  <div class="lightbox-content">
+    <button class="lightbox-close" onclick="closeLightbox(event)" title="Close">&times;</button>
+    <img id="lightboxImg" src="" alt="Zoomed Photo" />
+    <div id="lightboxCaption" class="lightbox-caption"></div>
+  </div>
+</div>
+
+<span class="easter-star" id="star" title="A little secret">✦</span>
+<div class="secret-toast" id="toast"></div>
+
+<!-- ============ SCENE 0: OPENING ============ -->
+<section id="opening">
+  <div class="msg" id="openingMsg"><span id="openingText"></span><span class="cursor" id="cursor"></span></div>
+  <button class="btn" id="curiousBtn" style="display:none;">I'm curious 👀</button>
+</section>
+
+<!-- ============ SCENE 1: SURPRISE INTRO ============ -->
+<section id="intro" style="background:linear-gradient(180deg,#3a2015,#26150f);">
+  <div class="veil" data-veil>
+    <h1 style="font-size:clamp(28px,7vw,44px); color:var(--gold);">Happy Children's Day, Kiddo ❤️</h1>
+  </div>
+  <div class="veil" data-veil><p class="line">This isn't just a Children's Day wish.</p></div>
+  <div class="veil" data-veil><p>Because some students become memories... and some quietly become a part of your heart.</p></div>
+  <div class="veil" data-veil><p class="line">And you, somehow, became one of those people.</p></div>
+  <div class="veil" data-veil><p>I wanted to give you something you could come back to years from now and remember how loved, respected, and appreciated you were.</p></div>
+  <div class="veil" data-veil>
+    <button class="btn" id="enterBtn">Enter Your Story →</button>
+  </div>
+</section>
+
+<!-- ============ SCENE 2: HERO — DO YOU REMEMBER ============ -->
+<section id="hero">
+  <div class="veil" data-veil>
+    <!-- HERO PHOTO: Earliest Childhood Memory -->
+    <div class="photo-frame" style="--r:-3deg;" onclick="openLightbox('assests/Childhood.jpeg', 'The Little Girl At The Beginning')">
+      <div class="tape"></div>
+      <div class="photo-slot">
+        <div class="photo-img-wrap">
+          <img src="assests/Childhood.jpeg" alt="Earliest Photo" onerror="handleMediaError(this, 'Earliest Photo')" />
+        </div>
+        <div class="photo-caption">that little girl ✨</div>
+      </div>
+    </div>
+  </div>
+  <div class="veil" data-veil style="margin-top:24px;">
+    <p class="line">Do you remember this little girl?</p>
+  </div>
+  <div class="veil" data-veil><p class="hand">I do.</p></div>
+  <div class="veil" data-veil><p>Actually... I remember her very well.</p></div>
+  <div class="veil" data-veil><p>Because she was the beginning of this story.</p></div>
+</section>
+
+<!-- ============ CHAPTER 01 ============ -->
+<section class="paper-panel">
+  <div class="veil" data-veil>
+    <div class="chapter-num">Chapter One</div>
+    <h2>You Were So Small.</h2>
+  </div>
+  <div class="veil" data-veil style="margin-top:20px;">
+    <!-- CHAPTER 1 PHOTO -->
+    <div class="photo-frame" style="--r:2deg;" onclick="openLightbox('assests/memory.jpeg', 'Chapter One — So Small')">
+      <div class="tape"></div>
+      <div class="photo-slot">
+        <div class="photo-img-wrap">
+          <img src="assests/memory.jpeg" alt="Chapter One Photo" onerror="handleMediaError(this, 'Memory Photo')" />
+        </div>
+        <div class="photo-caption">so small, so special 🌸</div>
+      </div>
+    </div>
+  </div>
+  <div class="veil" data-veil><p class="hand" style="color:var(--rose);">And I still remember you.</p></div>
+  <div class="veil" data-veil><p>Not because I knew what the future would look like. I didn't.</p></div>
+  <div class="veil" data-veil><p>I just remember a little girl who had something quietly special about her.</p></div>
+  <div class="veil" data-veil><p>Maybe it was your innocence. Maybe your little ways. Maybe it was simply the feeling that this child would leave a memory behind.</p></div>
+  <div class="veil" data-veil><p style="font-style:italic;">I never imagined that years later, I would stand in front of you as your teacher — and feel grateful that life somehow brought that little girl back into my story.</p></div>
+</section>
+
+<!-- ============ CHAPTER 02 — YEARS PASSED ============ -->
+<section style="background:linear-gradient(180deg,#26150f,#3a2015);">
+  <div class="veil" data-veil><p class="line">And then life moved on...</p></div>
+  <div class="veil" data-veil><p class="line">Years passed quietly.</p></div>
+  <div class="veil" data-veil><p>I finished Class 12. I left that chapter of my own school life behind and eventually returned to the same world — this time as a teacher.</p></div>
+  <div class="divider"></div>
+  <div class="veil" data-veil><h2 style="color:var(--gold);">And then I saw you again.</h2></div>
+  <div class="veil" data-veil><p>For a moment, it felt like time had folded in on itself.</p></div>
+  <div class="veil" data-veil><p class="hand">The little girl I remembered was suddenly standing in front of me again.</p></div>
+</section>
+
+<!-- ============ THE REUNION ============ -->
+<section class="paper-panel">
+  <div class="veil" data-veil>
+    <!-- REUNION PHOTO: School Days -->
+    <div class="photo-frame" style="--r:-2deg;" onclick="openLightbox('assests/study.jpeg', 'The Reunion — You Were My Student')">
+      <div class="tape"></div>
+      <div class="photo-slot">
+        <div class="photo-img-wrap">
+          <img src="assests/study.jpeg" alt="School Days Photo" onerror="handleMediaError(this, 'School Days Photo')" />
+        </div>
+        <div class="photo-caption">student & teacher 📚</div>
+      </div>
+    </div>
+  </div>
+  <div class="veil" data-veil style="margin-top:20px;"><p>And suddenly, the memory became real.</p></div>
+  <div class="veil" data-veil><p class="hand" style="color:var(--rose);">You were my student.</p></div>
+  <div class="veil" data-veil><p>I thought I would simply teach you, explain things, correct mistakes, give homework and watch you learn.</p></div>
+  <div class="veil" data-veil><p>I didn't know that somewhere between all those ordinary days, you would become one of the students I would remember long after the lesson ended.</p></div>
+  <div class="veil" data-veil><p class="small">And yes... somehow you also brought a lot of laughter and chaos with you. 😂</p></div>
+</section>
+
+<!-- ============ CHAPTER 03 ============ -->
+<section style="background:#26150f;">
+  <div class="veil" data-veil>
+    <div class="chapter-num">Chapter Three</div>
+    <h2 style="color:var(--paper);">Somewhere Along The Way, Everything Changed.</h2>
+  </div>
+  <div class="veil" data-veil style="margin-top:16px;">
+    <p>At first, it really was just teacher and student.</p>
+  </div>
+  <div class="veil" data-veil>
+    <p class="line">Lessons became conversations.</p>
+    <p class="line">Conversations became laughter.</p>
+    <p class="line">Laughter became memories.</p>
+    <p class="line">And memories became something I will always treasure.</p>
+  </div>
+  <div class="veil" data-veil><p>Somewhere between the questions, the random talks, the serious moments and the ridiculous ones, I realized that teaching you wasn't only about what I could teach you.</p></div>
+  <div class="veil" data-veil><p class="hand">You were teaching me something too.</p></div>
+  <div class="veil" data-veil><p>What it feels like when a student trusts you, respects you, remembers you, and makes you feel that your presence actually mattered.</p></div>
+</section>
+
+<!-- ============ OUR CHAOS ============ -->
+<section style="background:var(--paper); color:var(--ink);">
+  <div class="veil" data-veil><h2>Of course... it wasn't all emotional. 😂</h2></div>
+  <div class="veil" data-veil style="margin-top:20px; width:100%; display:flex; justify-content:center;">
+    <div class="chaos-grid">
+      <div class="chaos-card" style="--r:-1.5deg;">The Random Conversations</div>
+      <div class="chaos-card" style="--r:1deg;">The Unexpected Questions</div>
+      <div class="chaos-card" style="--r:-1deg;">The Laughing Sessions</div>
+      <div class="chaos-card" style="--r:1.5deg;">The Serious Teacher Moments</div>
+      <div class="chaos-card" style="--r:-1deg;">"I already told you this!" Moments</div>
+      <div class="chaos-card" style="--r:1deg;">The "Okay fine..." Moments</div>
+      <div class="chaos-card" style="--r:-1.5deg;">The Memories I'll Never Delete</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ VIDEO MEMORY 01 ============ -->
+<section style="background:#3a2015;">
+  <div class="veil" data-veil><h2 style="color:var(--gold);">A Little Piece Of The Past</h2></div>
+  <div class="veil" data-veil>
+    <!-- VIDEO 1: 1st.mp4 -->
+    <div class="video-memory">
+      <div class="video-frame">
+        <video controls playsinline preload="metadata">
+          <source src="assests/1st.mp4" type="video/mp4">
+          Your browser does not support the video tag.
+        </video>
+      </div>
+      <div class="video-caption">
+        <h3>Some moments deserve to be replayed.</h3>
+        <p>Not because they were perfect, but because they were ours to remember.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ VIDEO MEMORY 02 ============ -->
+<section style="background:#26150f;">
+  <div class="veil" data-veil><h2 style="color:var(--gold);">The Laughs & The Chaos</h2></div>
+  <div class="veil" data-veil>
+    <!-- VIDEO 2: 2nd.mp4 -->
+    <div class="video-memory">
+      <div class="video-frame">
+        <video controls playsinline preload="metadata">
+          <source src="assests/2nd.mp4" type="video/mp4">
+          Your browser does not support the video tag.
+        </video>
+      </div>
+      <div class="video-caption">
+        <h3>Because not every memory needs to be serious. 😂</h3>
+        <p>The random moments, the laughter, the nonsense — somehow those became some of my favorite memories.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ VIDEO MEMORY 03 ============ -->
+<section style="background:#3a2015;">
+  <div class="veil" data-veil><h2 style="color:var(--gold);">Look At You Now...</h2></div>
+  <div class="veil" data-veil>
+    <!-- VIDEO 3: 3rd.mp4 -->
+    <div class="video-memory">
+      <div class="video-frame">
+        <video controls playsinline preload="metadata">
+          <source src="assests/3rd.mp4" type="video/mp4">
+          Your browser does not support the video tag.
+        </video>
+      </div>
+      <div class="video-caption">
+        <h3>How did that little girl grow up so fast?</h3>
+        <p>Every time I see how far you've come, I feel a little emotional — and incredibly proud.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ CHAPTER 04 — LOOK AT YOU NOW ============ -->
+<section class="paper-panel">
+  <div class="veil" data-veil>
+    <div class="chapter-num">Chapter Four</div>
+    <h2>Look At You Now.</h2>
+  </div>
+  <div class="veil" data-veil style="display:flex; gap:16px; margin-top:20px; flex-wrap:wrap; justify-content:center;">
+    <!-- THEN PHOTO -->
+    <div class="photo-frame" style="--r:-3deg;" onclick="openLightbox('assests/Childhood.jpeg', 'Then — The Little Kid')">
+      <div class="tape"></div>
+      <div class="photo-slot small">
+        <div class="photo-img-wrap">
+          <img src="assests/Childhood.jpeg" alt="Then Photo" onerror="handleMediaError(this, 'Then Photo')" />
+        </div>
+        <div class="photo-caption">then 🐣</div>
+      </div>
+    </div>
+    <!-- NOW PHOTO -->
+    <div class="photo-frame" style="--r:3deg;" onclick="openLightbox('assests/Now.jpeg', 'Now — Class 12, Growing Up')">
+      <div class="tape"></div>
+      <div class="photo-slot small">
+        <div class="photo-img-wrap">
+          <img src="assests/Now.jpeg" alt="Now Photo" onerror="handleMediaError(this, 'Now Photo')" />
+        </div>
+        <div class="photo-caption">now ⭐</div>
+      </div>
+    </div>
+  </div>
+  <div class="veil" data-veil><p>Sometimes you don't notice someone growing because you see them little by little.</p></div>
+  <div class="veil" data-veil><p>Then one day, you look at them and realize: <em>they're not that little kid anymore.</em></p></div>
+  <div class="veil" data-veil><p>You're in Class 12 now, carrying your own dreams, making your own decisions, becoming your own person.</p></div>
+  <div class="veil" data-veil><p class="hand" style="color:var(--rose);">And I couldn't be prouder to have witnessed even a small part of that journey.</p></div>
+  <div class="veil" data-veil><p class="small">Also... who gave you permission to grow up this fast? 😭😂</p></div>
+</section>
+
+<!-- ============ PRIDE SECTION ============ -->
+<section style="background:#26150f;">
+  <div class="veil" data-veil><h1 style="color:var(--gold);">You make me proud.</h1></div>
+  <div class="veil" data-veil><p>Not because you are perfect.</p></div>
+  <div class="veil" data-veil><p>Not because you never make mistakes.</p></div>
+  <div class="veil" data-veil><p>I'm proud because I've watched you keep going.</p></div>
+  <div class="veil" data-veil><p>I've watched you learn, struggle, improve, laugh, make mistakes, try again and slowly become more confident in who you are.</p></div>
+  <div class="veil" data-veil><p style="font-style:italic;">And there is something deeply special about watching a student grow from someone you teach into someone you genuinely root for.</p></div>
+  <div class="veil" data-veil><p>You don't have to become perfect to make me proud. You just have to keep becoming more of yourself.</p></div>
+  <div class="veil" data-veil><p>And every little step you've taken has made me proud to say, <strong>"Yes, I taught her once."</strong></p></div>
+</section>
+
+<!-- ============ RESPECT SECTION ============ -->
+<section style="background:var(--espresso-2);">
+  <div class="veil" data-veil><h2 style="color:var(--paper);">And then there's your respect...</h2></div>
+  <div class="veil" data-veil><p>Maybe you don't realize how much it means to me when you still remember, still visit, still listen, and still treat me with the same respect.</p></div>
+  <div class="veil" data-veil><p>A teacher can teach hundreds of students. We remember many names. We remember many faces.</p></div>
+  <div class="veil" data-veil><p>But a few students leave something behind that can't be measured by marks, grades or report cards.</p></div>
+  <div class="veil" data-veil><p class="hand" style="color:var(--gold);">You are one of those students.</p></div>
+  <div class="veil" data-veil><p>And honestly, that is one of the sweetest gifts a teacher can receive.</p></div>
+</section>
+
+<!-- ============ YOU MADE ME FEEL LIKE A TEACHER ============ -->
+<section style="background:#12100e; color:var(--paper);">
+  <div class="veil" data-veil><h2>You didn't just learn from me.</h2></div>
+  <div class="veil" data-veil><p style="margin-top:14px;">You gave me something I didn't know I needed from teaching — the feeling that what I do can stay with someone.</p></div>
+  <div class="veil" data-veil><p>You made me feel heard. You made me feel respected. You made me feel that the time I spent explaining, correcting, encouraging and believing in you actually mattered.</p></div>
+  <div class="veil" data-veil><p class="line">And that means more than any "thank you" could ever explain.</p></div>
+  <div class="veil" data-veil><p>So if you ever wonder whether you were a memorable student...</p></div>
+  <div class="veil" data-veil><p class="hand" style="color:var(--gold);">You absolutely were.</p></div>
+</section>
+
+<!-- ============ 12 MESSAGE CARDS ============ -->
+<section style="background:var(--paper); color:var(--ink);">
+  <div class="veil" data-veil><h2>A few little notes.</h2></div>
+  <div class="veil" data-veil><p class="small">Tap each one.</p></div>
+  <div class="veil" data-veil style="margin-top:16px; width:100%; display:flex; justify-content:center;">
+    <div class="cards-wrap" id="cardsWrap">
+      <div class="mcard"><div class="front"><div class="emoji">💌</div><div class="title">A little reminder</div></div><div class="back">You matter more than you probably realize. Your presence, your kindness, and the little things you do have a way of staying in people's hearts.</div></div>
+      <div class="mcard"><div class="front"><div class="emoji">🌱</div><div class="title">Keep growing</div></div><div class="back">You don't have to have everything figured out. Keep learning, keep trying, and let yourself grow at your own pace.</div></div>
+      <div class="mcard"><div class="front"><div class="emoji">⭐</div><div class="title">Keep shining</div></div><div class="back">Never make yourself smaller just to fit somewhere. Keep that little spark that made you special from the beginning.</div></div>
+      <div class="mcard"><div class="front"><div class="emoji">🫶</div><div class="title">Never lose your kindness</div></div><div class="back">The world may change you in many ways, but I hope it never takes away your ability to care about people.</div></div>
+      <div class="mcard"><div class="front"><div class="emoji">📚</div><div class="title">Keep learning</div></div><div class="back">Marks will come and go. Lessons will be forgotten. But your curiosity and your willingness to learn will take you much further.</div></div>
+      <div class="mcard"><div class="front"><div class="emoji">😂</div><div class="title">Don't get too serious</div></div><div class="back">Please keep laughing. Some of my favorite memories are probably the moments when neither of us was being serious at all.</div></div>
+      <div class="mcard"><div class="front"><div class="emoji">🌸</div><div class="title">Protect your softness</div></div><div class="back">Growing up doesn't mean you have to become hard. Keep the gentle, genuine part of you that makes you, you.</div></div>
+      <div class="mcard"><div class="front"><div class="emoji">💪</div><div class="title">Trust yourself</div></div><div class="back">There will be days when you question yourself. On those days, remember how many times you've already proved that you can keep going.</div></div>
+      <div class="mcard"><div class="front"><div class="emoji">🏆</div><div class="title">Make yourself proud</div></div><div class="back">Make choices that let you look back one day and say, "I am proud of the person I became." That matters most.</div></div>
+      <div class="mcard"><div class="front"><div class="emoji">🏠</div><div class="title">You always have a place here</div></div><div class="back">No matter how much life changes, you will always be welcome here. Some bonds don't need a reason to continue.</div></div>
+      <div class="mcard"><div class="front"><div class="emoji">❤️</div><div class="title">You'll always be my student</div></div><div class="back">Even when you're older, busier, and living a completely different life, that little chapter where I got to teach you will always mean something to me.</div></div>
+      <div class="mcard"><div class="front"><div class="emoji">✨</div><div class="title">Still proud of you</div></div><div class="back">Today, tomorrow, years from now — I hope you know that someone who watched your journey will always be quietly cheering for you.</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ POEM ============ -->
+<section style="background:linear-gradient(180deg,#3a2015,#26150f);">
+  <div class="veil" data-veil><h2 style="color:var(--gold);">For The Little Girl Who Grew Up</h2></div>
+  <div id="poemWrap" style="margin-top:20px; max-width:480px;"></div>
+</section>
+
+<script id="poemData" type="application/json">
+[
+  "I saw you first as a little girl,",
+  "standing somewhere inside an ordinary day,",
+  "not knowing you would become a memory I would keep.",
+  "",
+  "Years passed like they always do,",
+  "and somehow life brought you back to me,",
+  "older now, but carrying something familiar.",
+  "",
+  "I thought I would teach you lessons.",
+  "I didn't know the lessons would become conversations,",
+  "and the conversations would become memories.",
+  "",
+  "I watched you grow quietly,",
+  "the way people often do — one day at a time,",
+  "until suddenly, you are no longer who you used to be.",
+  "",
+  "I saw the student become more confident,",
+  "the little girl become a young woman,",
+  "and the ordinary days become something worth remembering.",
+  "",
+  "You still come back.",
+  "You still remember.",
+  "You still give respect in a world that so easily forgets.",
+  "",
+  "And perhaps that is why you became more than a name on a class list.",
+  "You became one of those students a teacher quietly keeps rooting for.",
+  "",
+  "So grow. Dream. Go wherever life takes you.",
+  "Become whoever you are meant to become.",
+  "",
+  "Just remember this:",
+  "somewhere in your story, there is a teacher",
+  "who watched you grow and felt incredibly lucky to witness it."
+]
+</script>
+
+<!-- ============ ENVELOPES ============ -->
+<section style="background:#26150f;">
+  <div class="veil" data-veil><h2 style="color:var(--paper);">Open When...</h2></div>
+  <div class="veil" data-veil style="margin-top:16px; width:100%; display:flex; justify-content:center;">
+    <div class="env-list" id="envList"></div>
+  </div>
+</section>
+
+<script id="envData" type="application/json">
+[
+  {"label":"you're sad","msg":"Please remember: one difficult day cannot erase every good thing you've already done. Rest. Breathe. Begin again. I believe in you."},
+  {"label":"you doubt yourself","msg":"Think of how far you've already come. You don't need to know every next step. Just don't give up on yourself."},
+  {"label":"you achieve something","msg":"Please come tell me. Big achievement or tiny one — I will still want to hear about it, and I will still be proud."},
+  {"label":"you need motivation","msg":"You don't have to be extraordinary every day. Keep going gently. Small progress is still progress."},
+  {"label":"you miss the old days","msg":"Don't be sad that those days are over. Be grateful they happened. Some memories are meant to stay with us forever."},
+  {"label":"you're much older","msg":"If you're reading this years from now, I hope life has been kind to you. I hope you're happy, brave and still carrying that beautiful heart. And yes... you're still my student."}
+]
+</script>
+
+<!-- ============ THINGS I HOPE NEVER CHANGE ============ -->
+<section style="background:var(--paper); color:var(--ink);">
+  <div class="veil" data-veil><p>You will grow older. Your life will change. You'll meet new people. You'll chase new dreams. You'll walk into new chapters.</p></div>
+  <div class="veil" data-veil><h2>But I hope you never lose...</h2></div>
+  <div class="veil" data-veil style="margin-top:10px;">
+    <p class="line">your kindness · your innocence · your curiosity</p>
+    <p class="line">your ability to laugh · your respect for people · your beautiful heart</p>
+  </div>
+  <div class="veil" data-veil><p style="font-style:italic;">Because those are the things that made the little girl I first saw so special.</p></div>
+</section>
+
+<!-- ============ THE LETTER ============ -->
+<section style="background:#3a2015;">
+  <div class="veil" data-veil><h2 style="color:var(--gold);">The Letter</h2></div>
+  <div class="veil" data-veil style="margin-top:16px;">
+    <div class="paper-panel letter-paper">
+      Dear Kiddo,<br><br>
+      I don't know whether you'll laugh, cry, or make fun of me after reading this — but I wanted to write it anyway.<br><br>
+      I met you first as a tiny girl at a birthday, long before I had any idea what you'd become to me. Years passed. I finished school myself, came back to teach, and there you were again — older, but somehow still that same kid I'd noticed once.<br><br>
+      You became my student. Then the lessons turned into conversations, and the conversations turned into something I didn't expect: a bond I actually look forward to.<br><br>
+      I've watched you grow. I've watched you keep coming back to visit, keep learning, keep treating me with more respect than I probably deserve. And somewhere along the way, you became much more than a student to me.<br><br>
+      You're family. You're the little sister life somehow gave me. You're the child I never gave birth to, but somehow got the privilege of loving like one.<br><br>
+      Thank you for making me feel like a worthy teacher, sister and a child I never gave birth to but cared the same way.<br>
+      <div class="sign">— Your Sneha</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ PHOTO GALLERY ============ -->
+<section style="background:#26150f;">
+  <div class="veil" data-veil><h2 style="color:var(--paper);">Our Little Archive</h2></div>
+  <div class="veil" data-veil style="margin-top:16px; width:100%; display:flex; justify-content:center;">
+    <div class="gallery">
+      <!-- GALLERY PHOTO 1 -->
+      <div class="photo-frame" style="--r:-2.5deg;" onclick="openLightbox('assests/a.jpeg', 'Our Little Archive — Moments')">
+        <div class="tape"></div>
+        <div class="photo-slot small">
+          <div class="photo-img-wrap">
+            <img src="assests/a.jpeg" alt="Memory A" onerror="handleMediaError(this, 'Memory 1')" />
+          </div>
+          <div class="photo-caption">memories ✨</div>
+        </div>
+      </div>
+      <!-- GALLERY PHOTO 2 -->
+      <div class="photo-frame" style="--r:2.5deg;" onclick="openLightbox('assests/b.jpeg', 'Our Little Archive — Days')">
+        <div class="tape"></div>
+        <div class="photo-slot small">
+          <div class="photo-img-wrap">
+            <img src="assests/b.jpeg" alt="Memory B" onerror="handleMediaError(this, 'Memory 2')" />
+          </div>
+          <div class="photo-caption">laughter 🌻</div>
+        </div>
+      </div>
+      <!-- GALLERY PHOTO 3 -->
+      <div class="photo-frame" style="--r:1.5deg;" onclick="openLightbox('assests/v.jpeg', 'Our Little Archive — Times')">
+        <div class="tape"></div>
+        <div class="photo-slot small">
+          <div class="photo-img-wrap">
+            <img src="assests/v.jpeg" alt="Memory V" onerror="handleMediaError(this, 'Memory 3')" />
+          </div>
+          <div class="photo-caption">treasured 💖</div>
+        </div>
+      </div>
+      <!-- GALLERY PHOTO 4 -->
+      <div class="photo-frame" style="--r:-2deg;" onclick="openLightbox('assests/other.jpeg', 'Our Little Archive — Special')">
+        <div class="tape"></div>
+        <div class="photo-slot small">
+          <div class="photo-img-wrap">
+            <img src="assests/other.jpeg" alt="Other Memory" onerror="handleMediaError(this, 'Memory 4')" />
+          </div>
+          <div class="photo-caption">cherished 🌿</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="veil" data-veil><p class="small" style="margin-top:16px;">Tap any photo to view full size.</p></div>
+</section>
+
+<!-- ============ TIMELINE ============ -->
+<section style="background:var(--paper); color:var(--ink);">
+  <div class="veil" data-veil><h2>The Story So Far</h2></div>
+  <div class="veil" data-veil style="margin-top:16px; width:100%; display:flex; justify-content:center;">
+    <div class="timeline">
+      <div class="t-item"><h3>The Day I First Saw You</h3><p>A birthday, a tiny girl, an aura.</p></div>
+      <div class="t-item"><h3>Years Passed</h3><p>Different rooms, different roles.</p></div>
+      <div class="t-item"><h3>We Met Again</h3><p>Same girl. New chapter.</p></div>
+      <div class="t-item"><h3>You Became My Student</h3><p>Lessons that turned into memories.</p></div>
+      <div class="t-item"><h3>The Bond Grew</h3><p>Respect, visits, trust.</p></div>
+      <div class="t-item"><h3>Class 12</h3><p>Still here. Still learning.</p></div>
+      <div class="t-item"><h3>Today</h3><p>Reading this, probably smiling.</p></div>
+    </div>
+  </div>
+  <div class="veil" data-veil><p class="hand" style="color:var(--rose);">And the story isn't over.</p></div>
+</section>
+
+<!-- ============ BIG SURPRISE ============ -->
+<section id="bigSurprise" style="background:#0e0a08;">
+  <div class="veil" data-veil><p class="line">Wait...</p></div>
+  <div class="veil" data-veil><p class="line">You thought that was everything?</p></div>
+  <div class="veil" data-veil><p class="line">I saved the hardest part for last.</p></div>
+  <div class="veil" data-veil><p>One last thing I want you to remember.</p></div>
+  <div class="veil" data-veil>
+    <button class="btn" id="openLastBtn">Open it.</button>
+  </div>
+  <div id="finalReveal" style="display:none; margin-top:24px;">
+    <h1 style="color:var(--gold); font-size:clamp(24px,6vw,32px);">If I could go back and meet that little girl again...</h1>
+    <p>I'd tell her that she doesn't have to hurry to grow up.</p>
+    <p>I'd tell her that she will meet people who believe in her before she learns to believe in herself.</p>
+    <p>I'd tell her that some ordinary days will become precious memories.</p>
+    <p>I'd tell her that one day, someone will look back and feel incredibly grateful that their path crossed hers.</p>
+    <p>And I'd tell her...</p>
+    <p class="hand" style="color:var(--rose);">You have no idea how special you are to the people whose lives you've touched.</p>
+    <p>So please keep your kindness. Keep your laughter. Keep your curiosity. Keep that little spark that made you memorable from the beginning.</p>
+    <h2 style="margin-top:20px;">Happy Children's Day, Kiddo. ❤️</h2>
+  </div>
+</section>
+
+<!-- ============ FINAL SCREEN ============ -->
+<section id="final">
+  <div class="veil" data-veil><p class="small">For the little girl I once noticed, the student I later taught, and the person I now proudly cheer for.</p></div>
+  <div class="veil" data-veil><h1 class="big">I'm proud of you.</h1></div>
+  <div class="veil" data-veil><p>More than you probably realize.</p></div>
+  <div class="veil" data-veil><p>And wherever life takes you, I hope you never forget that you have already made your mark on someone's heart.</p></div>
+  <div class="veil" data-veil><p style="font-size:20px;">Happy Children's Day, Kiddo. ❤️</p></div>
+  <div class="veil" data-veil><p class="hand" style="color:var(--rose); font-size:30px;">— Your Sneha</p></div>
+  <div class="veil" data-veil><button class="btn ghost" style="color:var(--ink); border-color:var(--rose);" onclick="window.scrollTo({top:0, behavior:'smooth'})">Replay our story ↺</button></div>
+</section>
+
+<footer class="credit">made with a lot of love, one section at a time.</footer>
+
+<!-- Three.js, loaded from a CDN, powers floating particle backgrounds -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+<script>
+/* ============================================================
+   LIGHTBOX & MEDIA ERROR HANDLERS (Globally available)
+   ============================================================ */
+function openLightbox(src, caption){
+  var modal = document.getElementById('photoLightbox');
+  var img = document.getElementById('lightboxImg');
+  var cap = document.getElementById('lightboxCaption');
+  if(!modal || !img) return;
+  img.src = src;
+  if(cap) cap.textContent = caption || '';
+  modal.classList.add('active');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeLightbox(event){
+  if(event && event.target && (event.target.id === 'lightboxImg' || event.target.id === 'lightboxCaption')) return;
+  var modal = document.getElementById('photoLightbox');
+  if(!modal) return;
+  modal.classList.remove('active');
+  document.body.style.overflow = '';
+}
+
+document.addEventListener('keydown', function(e){
+  if(e.key === 'Escape') closeLightbox();
+});
+
+function handleMediaError(img, label){
+  // If image fails to load, gracefully display an elegant polaroid placeholder
+  var wrap = img.parentElement;
+  if(wrap && !img.dataset.hasFailed){
+    img.dataset.hasFailed = "true";
+    img.style.display = 'none';
+    var placeholder = document.createElement('div');
+    placeholder.className = 'photo-fallback';
+    placeholder.innerHTML = '<span>📷</span>' + (label || 'Photo memory');
+    wrap.appendChild(placeholder);
+  }
+}
+
+(function(){
+  "use strict";
+
+  /* ---------------- Opening typewriter ---------------- */
+  var openingLines = ["Hey... you.", "Yes, you.", "I made something for you.", "But there's one rule...", "You have to stay till the end."];
+  var textEl = document.getElementById('openingText');
+  var cursor = document.getElementById('cursor');
+  var btn = document.getElementById('curiousBtn');
+  var li = 0, ci = 0;
+
+  function typeNext(){
+    if(!textEl || !cursor || !btn) return;
+    if(li >= openingLines.length){
+      cursor.style.display = 'none';
+      btn.style.display = 'inline-block';
+      btn.style.opacity = '0';
+      requestAnimationFrame(function(){
+        btn.style.transition = 'opacity .8s ease';
+        btn.style.opacity = '1';
+      });
+      return;
+    }
+    var line = openingLines[li];
+    if(ci <= line.length){
+      textEl.textContent = line.slice(0, ci);
+      ci++;
+      setTimeout(typeNext, 42);
+    } else {
+      setTimeout(function(){
+        textEl.textContent = '';
+        ci = 0; li++;
+        typeNext();
+      }, 900);
+    }
+  }
+  typeNext();
+
+  if(btn){
+    btn.addEventListener('click', function(){
+      var intro = document.getElementById('intro');
+      if(intro) intro.scrollIntoView({behavior:'smooth'});
+    });
+  }
+
+  var enterBtn = document.getElementById('enterBtn');
+  if(enterBtn){
+    enterBtn.addEventListener('click', function(){
+      var hero = document.getElementById('hero');
+      if(hero) hero.scrollIntoView({behavior:'smooth'});
+    });
+  }
+
+  /* ---------------- Scroll reveal animations ---------------- */
+  var veils = document.querySelectorAll('[data-veil]');
+  if('IntersectionObserver' in window){
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(en){
+        if(en.isIntersecting){
+          en.target.classList.add('in');
+          io.unobserve(en.target);
+        }
+      });
+    }, {threshold: 0.08, rootMargin: '0px 0px -20px 0px'});
+    veils.forEach(function(v){ io.observe(v); });
+  } else {
+    veils.forEach(function(v){ v.classList.add('in'); });
+  }
+
+  /* ---------------- Video Auto-Pause Controller ---------------- */
+  var allVideos = document.querySelectorAll('video');
+  allVideos.forEach(function(vid){
+    vid.addEventListener('play', function(){
+      allVideos.forEach(function(other){
+        if(other !== vid && !other.paused){
+          other.pause();
+        }
+      });
+    });
+  });
+
+  /* ---------------- Message cards tap handler ---------------- */
+  var cardsWrap = document.getElementById('cardsWrap');
+  if(cardsWrap){
+    cardsWrap.querySelectorAll('.mcard').forEach(function(el){
+      el.addEventListener('click', function(){ el.classList.toggle('open'); });
+    });
+  }
+
+  /* ---------------- Poem, line by line ---------------- */
+  var poemDataEl = document.getElementById('poemData');
+  var poemWrap = document.getElementById('poemWrap');
+  if(poemDataEl && poemWrap){
+    try{
+      var poemLines = JSON.parse(poemDataEl.textContent);
+      poemLines.forEach(function(line){
+        var p = document.createElement('div');
+        p.className = 'poem-line';
+        p.innerHTML = line === '' ? '&nbsp;' : line;
+        poemWrap.appendChild(p);
+      });
+      if('IntersectionObserver' in window){
+        var poemIo = new IntersectionObserver(function(entries){
+          entries.forEach(function(en){
+            if(en.isIntersecting){
+              en.target.classList.add('in');
+              poemIo.unobserve(en.target);
+            }
+          });
+        }, {threshold: 0.1});
+        document.querySelectorAll('.poem-line').forEach(function(l){ poemIo.observe(l); });
+      }
+    } catch(err){ console.error('Poem error:', err); }
+  }
+
+  /* ---------------- Envelopes ---------------- */
+  var envDataEl = document.getElementById('envData');
+  var envList = document.getElementById('envList');
+  if(envDataEl && envList){
+    try{
+      var envData = JSON.parse(envDataEl.textContent);
+      envData.forEach(function(e){
+        var el = document.createElement('div');
+        el.className = 'envelope';
+        el.innerHTML = '<div class="flap">Open when ' + e.label + '</div><div class="inside">' + e.msg + '</div>';
+        el.addEventListener('click', function(){ el.classList.toggle('open'); });
+        envList.appendChild(el);
+      });
+    } catch(err){ console.error('Envelope error:', err); }
+  }
+
+  /* ---------------- Big surprise reveal ---------------- */
+  var openLastBtn = document.getElementById('openLastBtn');
+  var finalReveal = document.getElementById('finalReveal');
+  if(openLastBtn && finalReveal){
+    openLastBtn.addEventListener('click', function(){
+      finalReveal.style.display = 'block';
+      this.style.display = 'none';
+      finalReveal.scrollIntoView({behavior:'smooth', block:'center'});
+    });
+  }
+
+  /* ---------------- Easter egg star ---------------- */
+  var star = document.getElementById('star');
+  var toast = document.getElementById('toast');
+  var toastMsgs = ["You found me 👀", "Yes, I really did remember this.", "Okay, back to the story. 😉", "You're truly one of a kind! ⭐"];
+  var ti = 0;
+  if(star && toast){
+    star.addEventListener('click', function(){
+      toast.textContent = toastMsgs[ti % toastMsgs.length];
+      ti++;
+      toast.classList.add('show');
+      setTimeout(function(){ toast.classList.remove('show'); }, 2200);
+    });
+  }
+
+  /* ---------------- Three.js floating particles ---------------- */
+  var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function initParticles(container, opts){
+    if(!container || !window.THREE || reduceMotion) return;
+    opts = opts || {};
+    var w = container.clientWidth, h = container.clientHeight;
+    if(w === 0 || h === 0) return;
+
+    var renderer;
+    try{
+      renderer = new THREE.WebGLRenderer({ alpha:true, antialias:true });
+    } catch(err){ return; }
+
+    renderer.setSize(w, h);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.domElement.classList.add('particle-canvas');
+    container.insertBefore(renderer.domElement, container.firstChild);
+
+    var scene = new THREE.Scene();
+    var camera = new THREE.PerspectiveCamera(55, w / h, 0.1, 100);
+    camera.position.z = 18;
+
+    var count = opts.count || 120;
+    var geometry = new THREE.BufferGeometry();
+    var positions = new Float32Array(count * 3);
+    for(var i = 0; i < count; i++){
+      positions[i * 3]     = (Math.random() - 0.5) * 26;
+      positions[i * 3 + 1] = (Math.random() - 0.5) * 26;
+      positions[i * 3 + 2] = (Math.random() - 0.5) * 16;
+    }
+    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+
+    var material = new THREE.PointsMaterial({
+      color: opts.color || 0xc9a868,
+      size: opts.size || 0.14,
+      transparent: true,
+      opacity: opts.opacity || 0.75,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false
+    });
+
+    var points = new THREE.Points(geometry, material);
+    scene.add(points);
+
+    var raf = null;
+    var running = true;
+    var posArr = geometry.attributes.position.array;
+
+    function animate(t){
+      if(!running) return;
+      points.rotation.y += 0.0007;
+      points.rotation.x += 0.00025;
+      for(var i = 1; i < posArr.length; i += 3){
+        posArr[i] += Math.sin((t || 0) * 0.0003 + i) * 0.001;
+      }
+      geometry.attributes.position.needsUpdate = true;
+      renderer.render(scene, camera);
+      raf = requestAnimationFrame(animate);
+    }
+    animate(0);
+
+    var ro = new ResizeObserver(function(){
+      var nw = container.clientWidth, nh = container.clientHeight;
+      if(nw === 0 || nh === 0) return;
+      renderer.setSize(nw, nh);
+      camera.aspect = nw / nh;
+      camera.updateProjectionMatrix();
+    });
+    ro.observe(container);
+
+    if('IntersectionObserver' in window){
+      var visIo = new IntersectionObserver(function(entries){
+        entries.forEach(function(en){
+          if(en.isIntersecting){
+            if(!running){ running = true; animate(0); }
+          } else {
+            running = false;
+            if(raf) cancelAnimationFrame(raf);
+          }
+        });
+      }, { threshold: 0.05 });
+      visIo.observe(container);
+    }
+  }
+
+  // Initialize background star dust particles for key sections
+  window.addEventListener('load', function(){
+    initParticles(document.getElementById('opening'),     { color: 0xc9a868, count: 140, size: 0.13, opacity: 0.6 });
+    initParticles(document.getElementById('hero'),         { color: 0xc9a868, count: 90,  size: 0.11, opacity: 0.55 });
+    initParticles(document.getElementById('bigSurprise'),  { color: 0xb8695a, count: 160, size: 0.15, opacity: 0.7 });
+  });
+
+})();
+</script>
+
+</body>
+</html>
